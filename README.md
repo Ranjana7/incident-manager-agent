@@ -124,6 +124,67 @@ Optional install option:
 
 If WiX Toolset is installed on the build machine, `scripts\build-installer.ps1` can also produce a Windows `.exe` installer. Without WiX, the ZIP installer is the supported fallback.
 
+## Simple setup guide for non-technical users
+
+Most users should not need to understand Java, Maven, Node.js, or the source code. They only need the packaged ZIP from a GitHub Release or another shared location.
+
+After running `Run-IncidentManagerAgent.cmd`, open:
+
+```text
+http://localhost:8080
+```
+
+Then use the **Agent configuration** section.
+
+| Field | What to enter | Who usually provides it |
+|---|---|---|
+| Mailbox mode | Use `sample` for demo/testing. Use `graph` for real mailbox monitoring. | User or admin |
+| Tenant ID | Microsoft Entra tenant ID for the organization. | IT/admin |
+| Client ID | App registration client/application ID. | IT/admin |
+| Client secret | Secret for the app registration. | IT/admin |
+| Mailbox address | Shared incident mailbox to monitor, such as `incidents@contoso.com`. | User/team lead |
+| Teams webhook URL | Incoming webhook URL for the Teams channel where escalations should go. Optional for demo. | Teams/channel owner |
+| Polling interval | How often to check the mailbox, in milliseconds. Example: `60000` means every 60 seconds. | User/team lead |
+| Runbook folder | Optional custom runbook folder. Leave as `runbooks` to use bundled/default runbooks. | User/team lead |
+
+For demo or hackathon judging, users can leave mailbox mode as:
+
+```text
+sample
+```
+
+In `sample` mode, no Microsoft Graph details, mailbox address, or Teams webhook are required. The agent uses sample incidents and the embedded starter runbooks.
+
+For real mailbox monitoring, users need help from an IT/admin person to create or provide a Microsoft Graph app registration with the right mailbox permissions. Do not ask normal users to type their personal mailbox password into this app.
+
+### What if the user does not have Microsoft Graph details?
+
+They can still run the app in `sample` mode and review the dashboard/runbook workflow. For production use, the deployment owner should provide a prepared configuration or an onboarding guide with:
+
+- tenant ID
+- client ID
+- client secret
+- mailbox address
+- Teams webhook URL
+
+### Are runbooks already included?
+
+Yes. The app includes embedded starter runbooks for:
+
+```text
+phishing
+malware-alert
+generic-security-alert
+```
+
+Users can add custom runbooks later under:
+
+```text
+%USERPROFILE%\IncidentManagerAgent\runbooks\
+```
+
+If no custom runbooks exist, the app still starts using the embedded starter runbooks.
+
 ## How to build a distributable package
 
 Install prerequisites:
