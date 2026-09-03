@@ -40,7 +40,7 @@ Install-IncidentManagerAgent.cmd
 
 4. A desktop shortcut named `Incident Manager Agent` is created.
 
-## 3. What to configure in the dashboard
+## 3. Where to configure the local desktop agent
 
 Open:
 
@@ -48,7 +48,15 @@ Open:
 http://localhost:8080
 ```
 
-Find the `Agent configuration` section.
+Click:
+
+```text
+Agent setup
+```
+
+This opens the local desktop agent configuration panel.
+
+Important: agent setup is only shown on the local desktop dashboard, for example `localhost`. If someone is viewing a shared hosted report dashboard on a company domain, they should not see or need mailbox/client-secret settings.
 
 ## 4. Demo mode
 
@@ -147,3 +155,35 @@ If port `8080` is already in use, close the other app or change the port in:
 ```
 
 Then restart Incident Manager Agent.
+
+## 9. Shared hosted dashboard option
+
+The ZIP runs a local desktop agent for one user/machine. If your organization wants a shared dashboard that anyone can open without installing the desktop agent, host the backend/dashboard centrally instead.
+
+Example:
+
+```text
+https://incidents.arictra.com
+```
+
+or:
+
+```text
+https://incident-manager.your-org.com
+```
+
+For a hosted setup, users do not run `Run-IncidentManagerAgent.cmd`. Instead, they open the shared URL in a browser.
+
+The deployment owner/admin must provide and configure:
+
+- server or cloud hosting location, such as Azure App Service, Azure Container Apps, or a secured VM
+- custom domain, such as `incidents.arictra.com`
+- HTTPS certificate
+- Microsoft Graph app registration
+- mailbox address to monitor
+- Teams webhook or Teams app/bot integration
+- central database, such as Azure SQL, PostgreSQL, or another managed database
+- authentication, ideally Microsoft Entra ID, so only approved users can view reports
+- secret storage, such as Azure Key Vault
+
+Do not expose the hosted dashboard publicly without authentication. Reports may contain security incident information.

@@ -61,10 +61,14 @@ function App() {
   const [filters, setFilters] = React.useState<Filters>(defaultFilters);
   const [data, setData] = React.useState<IncidentResponse | null>(null);
   const [settings, setSettings] = React.useState<AgentSettings | null>(null);
+  const [showAgentSetup, setShowAgentSetup] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
   const [settingsMessage, setSettingsMessage] = React.useState("");
   const [selected, setSelected] = React.useState<Incident | null>(null);
+  const isLocalDashboard = window.location.hostname === "localhost"
+    || window.location.hostname === "127.0.0.1"
+    || window.location.hostname === "";
 
   const query = React.useMemo(() => {
     const params = new URLSearchParams();
@@ -105,13 +109,14 @@ function App() {
 
   React.useEffect(() => {
     async function loadSettings() {
+      if (!isLocalDashboard || !showAgentSetup) return;
       const response = await fetch("/api/settings");
       if (response.ok) {
         setSettings((await response.json()) as AgentSettings);
       }
     }
     loadSettings();
-  }, []);
+  }, [isLocalDashboard, showAgentSetup]);
 
   async function saveSettings() {
     if (!settings) return;
@@ -146,6 +151,11 @@ function App() {
         </div>
         <div className="hero-actions">
           <a className="button ghost" href="/api/installer">Download Windows agent</a>
+          {isLocalDashboard && (
+            <button className="button ghost" onClick={() => setShowAgentSetup(!showAgentSetup)}>
+              {showAgentSetup ? "Hide agent setup" : "Agent setup"}
+            </button>
+          )}
           <button className="button" onClick={() => window.location.reload()}>Refresh</button>
         </div>
       </header>
@@ -186,12 +196,12 @@ function App() {
       {error && <div className="error">{error}</div>}
       {loading && <div className="notice">Loading latest incidents...</div>}
 
-      {settings && (
+      {isLocalDashboard && showAgentSetup && settings && (
         <section className="panel settings">
           <div className="panel-heading">
             <div>
-              <h2>Agent configuration</h2>
-              <p className="muted">Configure the monitored mailbox for this machine. Use Graph app credentials or OAuth configuration, not a normal mailbox password.</p>
+              <h2>Local desktop agent setup</h2>
+              <p className="muted">Visible only on the local desktop agent dashboard. Report viewers on a shared hosted dashboard do not need these settings.</p>
             </div>
             <button className="button" onClick={saveSettings}>Save settings</button>
           </div>
@@ -209,6 +219,17 @@ function App() {
             <Field label="Runbook folder" value={settings.runbookDirectory} onChange={(runbookDirectory) => setSettings({ ...settings, runbookDirectory })} />
           </div>
           {settingsMessage && <p className="notice compact">{settingsMessage}</p>}
+        </section>
+      )}
+
+      {isLocalDashboard && showAgentSetup && !settings && (
+        <section className="panel settings">
+          <div className="panel-heading">
+            <div>
+              <h2>Local desktop agent setup</h2>
+              <p className="muted">Loading local agent settings...</p>
+            </div>
+          </div>
         </section>
       )}
 

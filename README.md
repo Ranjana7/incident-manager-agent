@@ -106,12 +106,12 @@ dist\IncidentManagerAgent.zip
 
 Give users the ZIP file. They do not need Java, Maven, Node.js, or the source code.
 
-Fastest option:
+Fastest local desktop option:
 
 1. Extract `IncidentManagerAgent.zip`.
 2. Double-click `Run-IncidentManagerAgent.cmd`.
 3. The dashboard opens at `http://localhost:8080`.
-4. Configure mailbox and Teams settings in the dashboard.
+4. Click **Agent setup** if you need to configure mailbox and Teams settings for this local desktop agent.
 5. Put custom runbooks under `%USERPROFILE%\IncidentManagerAgent\runbooks\`.
 
 Optional install option:
@@ -140,7 +140,9 @@ After running `Run-IncidentManagerAgent.cmd`, open:
 http://localhost:8080
 ```
 
-Then use the **Agent configuration** section.
+Click **Agent setup** to open the local desktop agent configuration panel.
+
+The setup panel is intentionally hidden by default and is only shown for local dashboards such as `http://localhost:8080`. People viewing a shared hosted report dashboard should not see or need mailbox credentials, client secrets, or local runbook settings.
 
 | Field | What to enter | Who usually provides it |
 |---|---|---|
@@ -190,6 +192,51 @@ Users can add custom runbooks later under:
 ```
 
 If no custom runbooks exist, the app still starts using the embedded starter runbooks.
+
+## Local desktop dashboard vs shared hosted dashboard
+
+There are two possible ways to use this project.
+
+| Mode | Who uses it | How it works |
+|---|---|---|
+| Local desktop agent | Analyst/operator monitoring a mailbox from their machine | User downloads the ZIP, runs the local agent, configures mailbox/runbooks/Teams in **Agent setup**, and opens `http://localhost:8080`. |
+| Shared hosted dashboard | Managers, teammates, or report viewers who should not install the agent | Organization hosts the backend/dashboard on a server/domain. Viewers open a shared URL and see reports/incidents only. |
+
+For shared report viewers, hide operational setup. They should not need:
+
+- tenant ID
+- client ID
+- client secret
+- mailbox address
+- runbook folder path
+
+Those values should be configured by the deployment owner/admin on the hosted backend.
+
+## Hosting on your own domain
+
+You can host the dashboard/backend centrally if you want reports to be shared with users who do not install the desktop agent.
+
+Example custom domains:
+
+```text
+https://incidents.arictra.com
+https://incident-manager.your-org.com
+```
+
+For a hosted deployment, you need:
+
+| Requirement | Why it is needed |
+|---|---|
+| Hosting platform | Azure App Service, Azure Container Apps, VM, or internal server to run the Spring Boot backend |
+| Custom domain | Example: `incidents.arictra.com` |
+| HTTPS certificate | Required for safe browser access |
+| Central database | Replace local SQLite with Azure SQL, PostgreSQL, or another shared database |
+| Microsoft Graph app registration | Lets the hosted service monitor the shared mailbox |
+| Secret storage | Store client secrets in Azure Key Vault or equivalent, not in files |
+| Authentication | Use Microsoft Entra ID so only approved users can view incident reports |
+| Teams integration | Webhook, Teams app, or bot for escalation alerts |
+
+Important: the current local desktop MVP is not hardened for public anonymous hosting. Before exposing it on a real domain, add authentication, central database configuration, production secret storage, HTTPS, and access controls.
 
 ## How to build a distributable package
 
