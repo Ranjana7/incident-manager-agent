@@ -1,0 +1,37 @@
+incidentType: risky-sign-in
+description: Risky sign-in, unfamiliar location, impossible travel, or identity protection alert.
+match:
+  subjectContains:
+    - risky sign-in
+    - identity protection
+    - impossible travel
+  bodyContains:
+    - unfamiliar location
+    - impossible travel
+    - sign-in risk
+severityRules:
+  critical:
+    containsAny:
+      - successful sign-in
+      - credentials used
+      - admin account
+  high:
+    containsAny:
+      - impossible travel
+      - high risk
+  medium:
+    containsAny:
+      - unfamiliar location
+steps:
+  - name: Extract sign-in indicators
+    action: parse_email
+  - name: Record identity checklist
+    action: add_note
+    parameters:
+      note: Confirm user, app, device, IP, location, risk level, MFA result, and whether the sign-in succeeded.
+  - name: Escalate risky sign-in
+    action: teams_alert
+    condition: unresolved
+escalation:
+  title: Risky sign-in requires review
+  message: A risky sign-in alert requires human review before user-impacting action.

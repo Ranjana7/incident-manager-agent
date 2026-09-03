@@ -1,0 +1,40 @@
+incidentType: compromised-account
+description: Account takeover, suspicious inbox rule, risky sign-in, or confirmed credential compromise.
+match:
+  subjectContains:
+    - compromised account
+    - account takeover
+    - suspicious sign-in
+    - risky sign-in
+  bodyContains:
+    - impossible travel
+    - credentials used
+    - suspicious inbox rule
+    - account compromise
+severityRules:
+  critical:
+    containsAny:
+      - active compromise
+      - credentials used
+      - mailbox forwarding rule
+  high:
+    containsAny:
+      - risky sign-in
+      - impossible travel
+      - suspicious inbox rule
+  medium:
+    containsAny:
+      - unusual sign-in
+steps:
+  - name: Extract account indicators
+    action: parse_email
+  - name: Record investigation checklist
+    action: add_note
+    parameters:
+      note: Validate affected user, sign-in time, source IP, location, inbox rules, MFA status, and recent mailbox activity.
+  - name: Escalate account compromise
+    action: teams_alert
+    condition: unresolved
+escalation:
+  title: Compromised account requires review
+  message: A possible account-compromise incident needs human validation and response.

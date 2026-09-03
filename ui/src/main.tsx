@@ -134,23 +134,36 @@ function App() {
     setSettingsMessage("Settings saved. Restart the desktop agent for mailbox/runbook changes to take effect.");
   }
 
+  function exportUrl() {
+    return `/api/incidents/export.csv?${query}`;
+  }
+
   const incidents = data?.incidents ?? [];
   const resolved = data?.byStatus.RESOLVED ?? 0;
   const escalated = data?.byStatus.ESCALATED ?? 0;
   const unresolved = data?.byStatus.UNRESOLVED ?? 0;
+  const total = data?.total ?? 0;
+  const automationRate = total === 0 ? 0 : Math.round((resolved / total) * 100);
+  const humanRate = total === 0 ? 0 : Math.round(((escalated + unresolved) / total) * 100);
 
   return (
     <main className="shell">
       <header className="hero">
         <div>
-          <p className="eyebrow">Desktop agent web dashboard</p>
+          <p className="eyebrow">Security operations command center</p>
           <h1>Incident Manager</h1>
           <p className="subtitle">
-            Live mailbox triage view for agent-resolved incidents, escalations, and cases needing human involvement.
+            Monitor mailbox-driven incidents, track agent-resolved work, and focus analysts on the cases that need human judgement.
           </p>
+          <div className="hero-chips">
+            <span className="chip">Live dashboard</span>
+            <span className="chip">Auto-refresh 30s</span>
+            <span className="chip">{isLocalDashboard ? "Local agent view" : "Shared report view"}</span>
+          </div>
         </div>
         <div className="hero-actions">
           <a className="button ghost" href="/api/installer">Download Windows agent</a>
+          <a className="button ghost" href={exportUrl()}>Export CSV</a>
           {isLocalDashboard && (
             <button className="button ghost" onClick={() => setShowAgentSetup(!showAgentSetup)}>
               {showAgentSetup ? "Hide agent setup" : "Agent setup"}
@@ -161,10 +174,21 @@ function App() {
       </header>
 
       <section className="metrics">
-        <Metric label="Total incidents" value={data?.total ?? 0} tone="neutral" />
-        <Metric label="Resolved by agent" value={resolved} tone="success" />
-        <Metric label="Human involvement" value={escalated + unresolved} tone="warning" />
-        <Metric label="Unresolved" value={unresolved} tone="danger" />
+        <Metric label="Total incidents" value={total} tone="neutral" caption="In selected window" />
+        <Metric label="Resolved by agent" value={resolved} tone="success" caption={`${automationRate}% automation`} />
+        <Metric label="Human involvement" value={escalated + unresolved} tone="warning" caption={`${humanRate}% needs review`} />
+        <Metric label="Unresolved" value={unresolved} tone="danger" caption="Open action needed" />
+      </section>
+
+      <section className="panel insight-strip">
+        <div>
+          <span className="section-kicker">Operational insight</span>
+          <strong>{automationRate}% of selected incidents were resolved by the desktop agent.</strong>
+        </div>
+        <div className="progress-track" aria-label="Automation rate">
+          <i style={{ width: `${automationRate}%` }} />
+        </div>
+        <span>{humanRate}% human involvement</span>
       </section>
 
       <section className="panel filters">
@@ -236,7 +260,10 @@ function App() {
       <section className="content-grid">
         <div className="panel incident-list">
           <div className="panel-heading">
-            <h2>Incidents</h2>
+            <div>
+              <h2>Incident queue</h2>
+              <p className="muted">Sorted by most recently processed</p>
+            </div>
             <span>{incidents.length} shown</span>
           </div>
           <div className="table">
@@ -246,15 +273,23 @@ function App() {
                 className={`row ${selected?.id === incident.id ? "selected" : ""}`}
                 onClick={() => setSelected(incident)}
               >
-                <span className={`severity ${incident.severity}`}>{incident.severity}</span>
+                <span className={`severity badge ${incident.severity}`}>{incident.severity}</span>
                 <span>
                   <strong>{incident.subject}</strong>
-                  <small>{incident.sender}</small>
+                  <small>{incident.sender} · {incident.incidentType}</small>
                 </span>
-                <span className={`status ${incident.status.toLowerCase()}`}>{statusLabel(incident.status)}</span>
+                <span>
+                  <span className={`status badge ${incident.status.toLowerCase()}`}>{statusLabel(incident.status)}</span>
+                  <small>{formatDate(incident.processedAt)}</small>
+                </span>
               </button>
             ))}
-            {incidents.length === 0 && <div className="empty">No incidents match the selected filters.</div>}
+            {incidents.length === 0 && (
+              <div className="empty-state">
+                <strong>No incidents match these filters</strong>
+                <span>Try a wider date range or clear the search/status filters.</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -266,6 +301,10 @@ function App() {
           {selected ? (
             <>
               <h3>{selected.subject}</h3>
+              <div className="detail-badges">
+                <span className={`status badge ${selected.status.toLowerCase()}`}>{statusLabel(selected.status)}</span>
+                <span className={`severity badge ${selected.severity}`}>{selected.severity}</span>
+              </div>
               <dl>
                 <dt>Status</dt><dd>{statusLabel(selected.status)}</dd>
                 <dt>Severity</dt><dd>{selected.severity}</dd>
@@ -276,7 +315,10 @@ function App() {
               <pre>{selected.report}</pre>
             </>
           ) : (
-            <div className="empty">Select an incident to inspect the agent report.</div>
+            <div className="empty-state">
+              <strong>Select an incident</strong>
+              <span>Agent notes and runbook execution details appear here.</span>
+            </div>
           )}
         </aside>
       </section>
@@ -290,11 +332,15 @@ function App() {
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: number; tone: string }) {
+function Metric({ label, value, tone, caption }: { label: string; value: number; tone: string; caption: string }) {
   return (
     <article className={`metric ${tone}`}>
-      <span>{label}</span>
+      <div className="metric-top">
+        <span>{label}</span>
+        <i />
+      </div>
       <strong>{value}</strong>
+      <small>{caption}</small>
     </article>
   );
 }
@@ -319,9 +365,13 @@ function Select(props: { label: string; value: string; onChange: (value: string)
 
 function Breakdown({ title, values }: { title: string; values: Record<string, number> }) {
   const max = Math.max(1, ...Object.values(values));
+  const total = Object.values(values).reduce((sum, value) => sum + value, 0);
   return (
     <div>
-      <h2>{title}</h2>
+      <div className="breakdown-title">
+        <h2>{title}</h2>
+        <span>{total}</span>
+      </div>
       {Object.entries(values).map(([key, value]) => (
         <div className="bar-row" key={key}>
           <span>{key}</span>

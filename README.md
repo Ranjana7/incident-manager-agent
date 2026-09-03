@@ -10,6 +10,7 @@ The app is intentionally local-first: each installed user configures their own m
 - Spring Boot backend running locally on `http://localhost:8080`
 - React dashboard with incident filters for today, last 7 days, last month, custom range, and all data
 - Incident breakdowns by severity, type, and outcome
+- CSV export for filtered incident reports
 - Settings UI for mailbox mode, Microsoft Graph details, Teams webhook, polling interval, and runbook folder
 - Local SQLite audit database
 - YAML runbooks stored in folders by incident type
@@ -26,6 +27,9 @@ The app is intentionally local-first: each installed user configures their own m
 ├─ runbooks\
 │  ├─ phishing\
 │  ├─ malware-alert\
+│  ├─ compromised-account\
+│  ├─ risky-sign-in\
+│  ├─ dlp-alert\
 │  └─ generic-security-alert\
 ├─ scripts\
 │  ├─ build-ui.ps1
@@ -182,6 +186,9 @@ Yes. The app includes embedded starter runbooks for:
 ```text
 phishing
 malware-alert
+compromised-account
+risky-sign-in
+dlp-alert
 generic-security-alert
 ```
 
@@ -284,6 +291,7 @@ The dashboard shows:
 - resolved by agent
 - human involvement / escalated incidents
 - unresolved incidents
+- CSV exports for the current filter set
 - severity mix
 - incident type mix
 - detailed agent report per incident

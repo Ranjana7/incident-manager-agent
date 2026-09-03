@@ -4,6 +4,9 @@ import com.incidentmanager.agent.audit.IncidentRecord;
 import com.incidentmanager.agent.audit.IncidentRecordRepository;
 import com.incidentmanager.agent.audit.IncidentStatus;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,16 +40,7 @@ public class IncidentController {
             @RequestParam(required = false) String incidentType,
             @RequestParam(required = false) String search
     ) {
-        DateWindow window = DateWindow.from(range, startDate, endDate);
-        List<IncidentRecord> filtered = incidentRecordRepository.findByProcessedAtBetween(window.start(), window.end())
-                .stream()
-                .filter(record -> equalsIgnoreCaseOrEmpty(severity, record.getSeverity()))
-                .filter(record -> status == null || status == record.getStatus())
-                .filter(record -> equalsIgnoreCaseOrEmpty(incidentType, record.getIncidentType()))
-                .filter(record -> matchesSearch(record, search))
-                .sorted(Comparator.comparing(IncidentRecord::getProcessedAt).reversed())
-                .toList();
-
+        List<IncidentRecord> filtered = filterIncidents(range, startDate, endDate, severity, status, incidentType, search);
         List<IncidentDto> incidents = filtered.stream().map(IncidentDto::from).toList();
         return new IncidentListResponse(
                 incidents,
@@ -55,6 +49,60 @@ public class IncidentController {
                 countBy(filtered, IncidentRecord::getIncidentType),
                 countBy(filtered, record -> record.getStatus().name())
         );
+    }
+
+    @GetMapping("/api/incidents/export.csv")
+    public ResponseEntity<String> exportCsv(
+            @RequestParam(defaultValue = "today") String range,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) String severity,
+            @RequestParam(required = false) IncidentStatus status,
+            @RequestParam(required = false) String incidentType,
+            @RequestParam(required = false) String search
+    ) {
+        List<IncidentRecord> filtered = filterIncidents(range, startDate, endDate, severity, status, incidentType, search);
+        StringBuilder csv = new StringBuilder();
+        csv.append("id,providerMessageId,incidentType,severity,status,sender,subject,receivedAt,processedAt,report\n");
+        for (IncidentRecord record : filtered) {
+            csv.append(csv(record.getId()))
+                    .append(',')
+                    .append(csv(record.getProviderMessageId()))
+                    .append(',')
+                    .append(csv(record.getIncidentType()))
+                    .append(',')
+                    .append(csv(record.getSeverity()))
+                    .append(',')
+                    .append(csv(record.getStatus().name()))
+                    .append(',')
+                    .append(csv(record.getSender()))
+                    .append(',')
+                    .append(csv(record.getSubject()))
+                    .append(',')
+                    .append(csv(record.getReceivedAt()))
+                    .append(',')
+                    .append(csv(record.getProcessedAt()))
+                    .append(',')
+                    .append(csv(record.getReport()))
+                    .append('\n');
+        }
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"incident-report.csv\"")
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .body(csv.toString());
+    }
+
+    private List<IncidentRecord> filterIncidents(String range, LocalDate startDate, LocalDate endDate, String severity,
+                                                 IncidentStatus status, String incidentType, String search) {
+        DateWindow window = DateWindow.from(range, startDate, endDate);
+        return incidentRecordRepository.findByProcessedAtBetween(window.start(), window.end())
+                .stream()
+                .filter(record -> equalsIgnoreCaseOrEmpty(severity, record.getSeverity()))
+                .filter(record -> status == null || status == record.getStatus())
+                .filter(record -> equalsIgnoreCaseOrEmpty(incidentType, record.getIncidentType()))
+                .filter(record -> matchesSearch(record, search))
+                .sorted(Comparator.comparing(IncidentRecord::getProcessedAt).reversed())
+                .toList();
     }
 
     private static boolean equalsIgnoreCaseOrEmpty(String requested, String actual) {
@@ -81,6 +129,11 @@ public class IncidentController {
 
     private static Map<String, Long> countBy(List<IncidentRecord> records, Function<IncidentRecord, String> classifier) {
         return records.stream().collect(Collectors.groupingBy(classifier, Collectors.counting()));
+    }
+
+    private static String csv(Object value) {
+        String text = value == null ? "" : value.toString();
+        return "\"" + text.replace("\"", "\"\"") + "\"";
     }
 
     private record DateWindow(OffsetDateTime start, OffsetDateTime end) {

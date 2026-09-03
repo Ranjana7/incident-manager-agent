@@ -1,0 +1,37 @@
+incidentType: dlp-alert
+description: Data loss prevention alert, sensitive data sharing, or policy violation.
+match:
+  subjectContains:
+    - dlp
+    - data loss
+    - sensitive data
+  bodyContains:
+    - policy violation
+    - sensitive information
+    - external sharing
+severityRules:
+  critical:
+    containsAny:
+      - highly confidential
+      - mass download
+      - external recipient
+  high:
+    containsAny:
+      - sensitive information
+      - external sharing
+  medium:
+    containsAny:
+      - policy violation
+steps:
+  - name: Extract DLP indicators
+    action: parse_email
+  - name: Record DLP triage note
+    action: add_note
+    parameters:
+      note: Confirm policy, data type, sender, recipient, customer, and whether external sharing occurred.
+  - name: Escalate DLP alert
+    action: teams_alert
+    condition: unresolved
+escalation:
+  title: DLP alert requires review
+  message: A DLP incident needs human validation before any containment action.
