@@ -18,7 +18,11 @@ if (-not (Test-Path -LiteralPath $javaHome)) {
     throw 'JDK 21 was not found. Run scripts\install-prerequisites.ps1 or install JDK 21.'
 }
 if (-not (Test-Path -LiteralPath $maven)) {
-    throw 'Local Maven was not found. Download Maven 3.9.9 into tools or rerun the Maven setup step.'
+    $tools = Join-Path $projectRoot 'tools'
+    $zip = Join-Path $tools 'apache-maven-3.9.9-bin.zip'
+    New-Item -ItemType Directory -Path $tools -Force | Out-Null
+    Invoke-WebRequest -Uri 'https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.zip' -OutFile $zip
+    Expand-Archive -LiteralPath $zip -DestinationPath $tools -Force
 }
 if (-not (Test-Path -LiteralPath $jpackage)) {
     throw 'jpackage was not found. Ensure JDK 21 is installed.'
@@ -68,6 +72,60 @@ if (-not (Test-Path -LiteralPath $exe)) {
     if (Test-Path -LiteralPath $appImage) { Remove-Item -LiteralPath $appImage -Recurse -Force }
     if (Test-Path -LiteralPath $zipOutput) { Remove-Item -LiteralPath $zipOutput -Force }
     & $jpackage @jpackageArgsBase '--type' 'app-image'
+
+    $appLauncher = Join-Path $appImage 'Start-IncidentManagerAgent.cmd'
+@'
+@echo off
+setlocal
+set "ROOT=%~dp0"
+set "AGENT_EXE=%ROOT%IncidentManagerAgent.exe"
+
+if not exist "%AGENT_EXE%" (
+  echo Incident Manager Agent executable was not found: "%AGENT_EXE%"
+  pause
+  exit /b 1
+)
+
+if not exist "%USERPROFILE%\IncidentManagerAgent\logs" mkdir "%USERPROFILE%\IncidentManagerAgent\logs"
+
+cd /d "%ROOT%"
+start "Incident Manager Agent" "%AGENT_EXE%"
+timeout /t 8 /nobreak >nul
+start "" "http://localhost:8080"
+echo Incident Manager Agent is starting. If the dashboard did not open, browse to http://localhost:8080
+'@ | Set-Content -LiteralPath $appLauncher -Encoding ASCII
+
+    $runFromZip = Join-Path $dist 'Run-IncidentManagerAgent.cmd'
+    @'
+@echo off
+setlocal
+call "%~dp0IncidentManagerAgent\Start-IncidentManagerAgent.cmd"
+'@ | Set-Content -LiteralPath $runFromZip -Encoding ASCII
+
+    $readmeFirst = Join-Path $dist 'README-FIRST.txt'
+    @'
+Incident Manager Agent
+
+No Java, Maven, Node.js, or developer tooling is required on the customer's machine.
+
+Quick start:
+1. Extract this ZIP.
+2. Double-click Run-IncidentManagerAgent.cmd.
+3. The dashboard opens at http://localhost:8080.
+4. Configure mailbox, Teams, polling, and runbook settings in the dashboard.
+
+Optional install:
+Run Install-IncidentManagerAgent.cmd to copy the app to %LOCALAPPDATA%\IncidentManagerAgent and create a desktop shortcut.
+
+Logs:
+%USERPROFILE%\IncidentManagerAgent\logs\agent.log
+
+Local data:
+%USERPROFILE%\IncidentManagerAgent\incident-agent.db
+%USERPROFILE%\IncidentManagerAgent\config\application-local.yml
+%USERPROFILE%\IncidentManagerAgent\runbooks\
+'@ | Set-Content -LiteralPath $readmeFirst -Encoding ASCII
+
     $portableInstaller = Join-Path $dist 'Install-IncidentManagerAgent.cmd'
     @'
 @echo off
@@ -80,12 +138,13 @@ if not exist "%SOURCE%\IncidentManagerAgent.exe" (
 )
 if exist "%DEST%" rmdir /s /q "%DEST%"
 xcopy "%SOURCE%" "%DEST%\" /e /i /y >nul
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Incident Manager Agent.lnk'); $s.TargetPath=$env:LOCALAPPDATA + '\IncidentManagerAgent\IncidentManagerAgent.exe'; $s.WorkingDirectory=$env:LOCALAPPDATA + '\IncidentManagerAgent'; $s.Save()"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut([Environment]::GetFolderPath('Desktop') + '\Incident Manager Agent.lnk'); $s.TargetPath=$env:LOCALAPPDATA + '\IncidentManagerAgent\Start-IncidentManagerAgent.cmd'; $s.WorkingDirectory=$env:LOCALAPPDATA + '\IncidentManagerAgent'; $s.Save()"
 echo Installed Incident Manager Agent to "%DEST%".
-echo Use the desktop shortcut or run "%DEST%\IncidentManagerAgent.exe".
+echo Use the desktop shortcut or run "%DEST%\Start-IncidentManagerAgent.cmd".
+call "%DEST%\Start-IncidentManagerAgent.cmd"
 pause
 '@ | Set-Content -LiteralPath $portableInstaller -Encoding ASCII
-    Compress-Archive -Path $appImage,$portableInstaller -DestinationPath $zipOutput -Force
+    Compress-Archive -Path $appImage,$portableInstaller,$runFromZip,$readmeFirst -DestinationPath $zipOutput -Force
 }
 
 Write-Host "Package output written to $dist"

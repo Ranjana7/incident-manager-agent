@@ -104,14 +104,23 @@ Use the generated package:
 dist\IncidentManagerAgent.zip
 ```
 
-Give users the ZIP file. They should:
+Give users the ZIP file. They do not need Java, Maven, Node.js, or the source code.
+
+Fastest option:
 
 1. Extract `IncidentManagerAgent.zip`.
-2. Run `Install-IncidentManagerAgent.cmd`.
-3. Start the app from the desktop shortcut named **Incident Manager Agent**.
-4. Open `http://localhost:8080`.
-5. Configure mailbox and Teams settings in the dashboard.
-6. Put custom runbooks under `%USERPROFILE%\IncidentManagerAgent\runbooks\`.
+2. Double-click `Run-IncidentManagerAgent.cmd`.
+3. The dashboard opens at `http://localhost:8080`.
+4. Configure mailbox and Teams settings in the dashboard.
+5. Put custom runbooks under `%USERPROFILE%\IncidentManagerAgent\runbooks\`.
+
+Optional install option:
+
+1. Extract `IncidentManagerAgent.zip`.
+2. Double-click `Install-IncidentManagerAgent.cmd`.
+3. The installer copies the app to `%LOCALAPPDATA%\IncidentManagerAgent`.
+4. It creates a desktop shortcut named **Incident Manager Agent**.
+5. It starts the agent and opens the dashboard.
 
 If WiX Toolset is installed on the build machine, `scripts\build-installer.ps1` can also produce a Windows `.exe` installer. Without WiX, the ZIP installer is the supported fallback.
 
@@ -129,11 +138,15 @@ Build frontend, backend, tests, and package:
 powershell -ExecutionPolicy Bypass -File .\scripts\build-installer.ps1
 ```
 
+The build script downloads a local Maven copy into `tools\` if Maven is not already present there. `tools\` is ignored by git.
+
 Outputs:
 
 ```text
 dist\IncidentManagerAgent.zip
+dist\Run-IncidentManagerAgent.cmd
 dist\Install-IncidentManagerAgent.cmd
+dist\README-FIRST.txt
 dist\IncidentManagerAgent\
 ```
 

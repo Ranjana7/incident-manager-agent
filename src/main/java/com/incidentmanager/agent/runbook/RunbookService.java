@@ -150,8 +150,8 @@ public class RunbookService {
     }
 
     private Runbook readRunbook(Path path) {
-        try {
-            Runbook runbook = yamlMapper.readValue(path.toFile(), Runbook.class);
+        try (InputStream inputStream = Files.newInputStream(path)) {
+            Runbook runbook = yamlMapper.readValue(inputStream, Runbook.class);
             if (runbook.getIncidentType() == null || runbook.getIncidentType().isBlank()) {
                 throw new IllegalStateException("Runbook is missing incidentType: " + path.toAbsolutePath());
             }
