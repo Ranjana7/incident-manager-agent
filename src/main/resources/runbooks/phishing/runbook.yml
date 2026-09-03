@@ -1,0 +1,37 @@
+incidentType: phishing
+description: Suspicious email, malicious link, credential harvesting, or phishing campaign.
+match:
+  subjectContains:
+    - phishing
+    - suspicious email
+    - credential theft
+  bodyContains:
+    - malicious link
+    - credential harvesting
+    - user reported phish
+severityRules:
+  critical:
+    containsAny:
+      - active compromise
+      - mailbox forwarding rule
+      - credentials used
+  high:
+    containsAny:
+      - credential theft
+      - malicious link
+  medium:
+    containsAny:
+      - suspicious email
+steps:
+  - name: Extract indicators
+    action: parse_email
+  - name: Record triage note
+    action: add_note
+    parameters:
+      note: Check URLs, sender domain, affected users, and whether credentials were entered.
+  - name: Escalate unresolved phishing
+    action: teams_alert
+    condition: unresolved
+escalation:
+  title: Phishing incident requires review
+  message: A phishing-related incident could not be fully resolved automatically. Please review the mailbox item and audit record.

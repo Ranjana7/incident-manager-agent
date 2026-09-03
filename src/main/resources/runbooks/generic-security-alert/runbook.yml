@@ -1,0 +1,35 @@
+incidentType: generic-security-alert
+description: Fallback runbook for security emails that do not match a specific incident type.
+match:
+  subjectContains:
+    - security
+    - incident
+    - alert
+  bodyContains:
+    - threat
+    - security issue
+    - incident
+severityRules:
+  high:
+    containsAny:
+      - critical
+      - urgent
+      - confirmed compromise
+  medium:
+    containsAny:
+      - warning
+      - investigation
+      - suspicious
+steps:
+  - name: Extract indicators
+    action: parse_email
+  - name: Add fallback note
+    action: add_note
+    parameters:
+      note: No specialized runbook matched. Human review is required.
+  - name: Alert human
+    action: teams_alert
+    condition: always
+escalation:
+  title: Security incident requires triage
+  message: A security-related email matched only the generic runbook and needs human triage.

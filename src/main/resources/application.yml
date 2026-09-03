@@ -1,0 +1,36 @@
+spring:
+  config:
+    import: optional:file:./config/application-local.yml,optional:file:${user.home}/IncidentManagerAgent/config/application-local.yml
+  datasource:
+    url: jdbc:sqlite:${user.home}/IncidentManagerAgent/incident-agent.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  main:
+    banner-mode: console
+
+server:
+  port: 8080
+
+agent:
+  runbook-directory: runbooks
+  mailbox:
+    mode: sample
+    poll-interval-ms: 60000
+    graph:
+      tenant-id: ""
+      client-id: ""
+      client-secret: ""
+      mailbox-address: ""
+  teams:
+    webhook-url: ""
+  reporting:
+    daily-summary-hour: 8
+
+logging:
+  level:
+    root: INFO
+    com.incidentmanager.agent: INFO
