@@ -103,28 +103,7 @@ call "%~dp0IncidentManagerAgent\Start-IncidentManagerAgent.cmd"
 '@ | Set-Content -LiteralPath $runFromZip -Encoding ASCII
 
     $readmeFirst = Join-Path $dist 'README-FIRST.txt'
-    @'
-Incident Manager Agent
-
-No Java, Maven, Node.js, or developer tooling is required on the customer's machine.
-
-Quick start:
-1. Extract this ZIP.
-2. Double-click Run-IncidentManagerAgent.cmd.
-3. The dashboard opens at http://localhost:8080.
-4. Configure mailbox, Teams, polling, and runbook settings in the dashboard.
-
-Optional install:
-Run Install-IncidentManagerAgent.cmd to copy the app to %LOCALAPPDATA%\IncidentManagerAgent and create a desktop shortcut.
-
-Logs:
-%USERPROFILE%\IncidentManagerAgent\logs\agent.log
-
-Local data:
-%USERPROFILE%\IncidentManagerAgent\incident-agent.db
-%USERPROFILE%\IncidentManagerAgent\config\application-local.yml
-%USERPROFILE%\IncidentManagerAgent\runbooks\
-'@ | Set-Content -LiteralPath $readmeFirst -Encoding ASCII
+    Copy-Item -LiteralPath (Join-Path $projectRoot 'docs\END_USER_SETUP.md') -Destination $readmeFirst
 
     $portableInstaller = Join-Path $dist 'Install-IncidentManagerAgent.cmd'
     @'

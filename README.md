@@ -128,6 +128,12 @@ If WiX Toolset is installed on the build machine, `scripts\build-installer.ps1` 
 
 Most users should not need to understand Java, Maven, Node.js, or the source code. They only need the packaged ZIP from a GitHub Release or another shared location.
 
+The ZIP includes `README-FIRST.txt`, which contains step-by-step setup instructions for non-technical users. The same guide is tracked in this repo at:
+
+```text
+docs\END_USER_SETUP.md
+```
+
 After running `Run-IncidentManagerAgent.cmd`, open:
 
 ```text
