@@ -1,1 +1,29 @@
+server:
+  port: 8080
 
+spring:
+  datasource:
+    url: jdbc:sqlite:${user.home}/IncidentManagerAgent/incident-agent.db
+    driver-class-name: org.sqlite.JDBC
+  jpa:
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  main:
+    banner-mode: console
+
+agent:
+  runbook-directory: runbooks
+  mailbox:
+    mode: sample
+    poll-interval-ms: 60000
+    graph:
+      tenant-id: ""
+      client-id: ""
+      client-secret: ""
+      mailbox-address: ""
+  teams:
+    webhook-url: ""
+  reporting:
+    daily-summary-hour: 8
